@@ -1,3 +1,5 @@
+import "@neongamerbot/credits";
+
 import React, { useEffect, useState } from 'react';
 // import 'react-pdf/dist/Page/TextLayer.css';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -11,16 +13,20 @@ type Cert = {
 function App() {
   const apiUrl = isDev ? './example.json' : './certs.php'
   const [certs, setCerts] = useState<null | Cert[]>(null)
-  const [pdfPath, setPDFPath] = useState<null | Cert>(null)
+  const [pdfPath, setPDFPath] = useState<null | Cert>(window.location.hash.slice(1) ? JSON.parse(atob(window.location.hash.slice(1))) as Cert : null)
   useEffect(() => {
     if(!certs) {
       fetch(apiUrl).then(r=>r.json()).then(json => setCerts(json))
     }
   })
-const setPdf = (c:string, parent: string) => () => setPDFPath({
-  child: [c],
-  parent
-}) 
+const setPdf = (c:string, parent: string) => () => {
+  const obj = {
+    child: [c],
+    parent
+  }
+  window.location.hash = `#${btoa(JSON.stringify(obj))}`
+  setPDFPath(obj)
+} 
   return (
 <div className="hero min-h-screen" style={{ background: "var(--mantle)"}}>
   <div className="hero-content text-center">
@@ -39,11 +45,11 @@ const setPdf = (c:string, parent: string) => () => setPDFPath({
       <h1 className="text-5xl font-bold">Certificates</h1>
       <div className='grid gap-2 grid-cols-1'>
     { certs? certs.map((d) => {
-      return <div key={d.parent} className='shadow-lg rounded p-5 bg-base-100 m-5'>
+      return <div key={d.parent} className='shadow-lg rounded p-5 bg-base-100 md:m-5 m-2'>
         <h3 className='font-bold text-2xl'>{d.parent}</h3>
         <ul>
           {d.child.map((c,i) => {
-            return <li key={i} className='li marker' style={{ listStyleType: 'marker' }}><button onClick={setPdf(c, d.parent)}>{c}</button></li>
+            return <li key={i} className='li marker m-2' style={{ listStyleType: 'marker' }}><button onClick={setPdf(c, d.parent)}>{c}</button></li>
           })}
         </ul>
       </div>
@@ -70,11 +76,8 @@ function PdfRender({ pdf }: { pdf: string }) {
   return (
     <div>
       <Document file={pdf} onLoadSuccess={onDocumentLoadSuccess} options={{ verbosity: isDev ? 1 : 0 }}>
-        <Page pageNumber={pageNumber}  scale={width > 786  ? 0.7 : 0.4} canvasBackground={"var(--mantle)"} />
+        <Page pageNumber={pageNumber}  scale={width > 786  ? 0.7 : 0.4} canvasBackground={"var(--mantle)"}   renderAnnotationLayer={false} renderTextLayer={false} />
       </Document>
-      <p>
-        Page {pageNumber} of {numPages}
-      </p>
     </div>
   );
 }
